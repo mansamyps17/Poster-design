@@ -2,34 +2,33 @@ import os
 from flask import Flask, request
 from telegram import Update, Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
-from PIL import Image, ImageDraw
 import asyncio
 
 TOKEN = os.getenv("BOT_TOKEN")
 app = Flask(__name__)
 
-bot = Bot(token=TOKEN)
-telegram_app = Application.builder().token(TOKEN).updater(None).build()
+# កសាង Application ឲ្យបានត្រឹមត្រូវតាមស្តង់ដារថ្មី
+telegram_app = Application.builder().token(TOKEN).build()
 
-# ពេលអតិថិជនវាយ /start
 async def start(update: Update, context):
     await update.message.reply_text("សួស្ដី! សូមផ្ញើរូបភាពផលិតផលរបស់អ្នកមក ដើម្បីខ្ញុំបង្កើត Poster ជូន។")
 
-# ពេលអតិថិជនផ្ញើរូបភាពមក
 async def handle_photo(update: Update, context):
-    await update.message.reply_text("ได้รับរូបភាពហើយ! កំពុងបង្កើត Poster ជូន... (រង់ចាំអភិវឌ្ឍន៍បន្ថែម)")
+    await update.message.reply_text("ទទួលបានរូបភាពហើយ! កំពុងបង្កើត Poster ជូន...")
 
 telegram_app.add_handler(CommandHandler("start", start))
 telegram_app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
-    update = Update.de_json(request.get_json(force=True), bot)
+    json_data = request.get_json(force=True)
     
     async def process():
-        await telegram_app.initialize()
-        await telegram_app.process_update(update)
-    
+        async with telegram_app:
+            update = Update.de_json(json_data, telegram_app.bot)
+            await telegram_app.initialize()
+            await telegram_app.process_update(update)
+            
     asyncio.run(process())
     return "OK", 200
 
