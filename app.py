@@ -2,30 +2,30 @@ import os
 from flask import Flask, request
 from telegram import Update, Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 import asyncio
 
 TOKEN = os.getenv("BOT_TOKEN")
 app = Flask(__name__)
 
-# បង្កើត Bot instance
 bot = Bot(token=TOKEN)
-
-# បង្កើត Application សម្រាប់จัดการ Handler ផ្សេងៗ
 telegram_app = Application.builder().token(TOKEN).updater(None).build()
 
+# ពេលអតិថិជនវាយ /start
 async def start(update: Update, context):
-    await update.message.reply_text("សួស្ដី! សូមផ្ញើរូបភាពផលិតផល និងព័ត៌មានមក ដើម្បីបង្កើត Poster ហាងរបស់អ្នក។")
+    await update.message.reply_text("សួស្ដី! សូមផ្ញើរូបភាពផលិតផលរបស់អ្នកមក ដើម្បីខ្ញុំបង្កើត Poster ជូន។")
 
-# ភ្ជាប់ Command /start
+# ពេលអតិថិជនផ្ញើរូបភាពមក
+async def handle_photo(update: Update, context):
+    await update.message.reply_text("ได้รับរូបភាពហើយ! កំពុងបង្កើត Poster ជូន... (រង់ចាំអភិវឌ្ឍន៍បន្ថែម)")
+
 telegram_app.add_handler(CommandHandler("start", start))
+telegram_app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
-    # ទទួល Request ពី Telegram ហើយបញ្ជូនបន្តទៅ Telegram Application
     update = Update.de_json(request.get_json(force=True), bot)
     
-    # ដំណើរការ Async function ក្នុង Flask
     async def process():
         await telegram_app.initialize()
         await telegram_app.process_update(update)
